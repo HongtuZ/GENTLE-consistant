@@ -19,3 +19,4 @@ __pycache__
 # bkdevops prebuild
 .bk_pb/
 build.yml
+data/
