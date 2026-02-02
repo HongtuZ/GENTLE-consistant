@@ -121,8 +121,8 @@ def experiment(variant, seed=None):
         task_dynamics.train(data)
         print(f"Task {task_idx} finished training")
     
-    os.makedirs('/data/zrz/gentle_data/asset/dynamics/'+variant['env_name']+f'/expert_seed{seed}', exist_ok=True)
-    task_dynamics.save('/data/zrz/gentle_data/asset/dynamics/'+variant['env_name']+f'/expert_seed{seed}')
+    os.makedirs('/data/zhouhongtu/GENTLE/data/asset/dynamics/'+variant['env_name']+f'/expert_seed{seed}', exist_ok=True)
+    task_dynamics.save('/data/zhouhongtu/GENTLE/data/asset/dynamics/'+variant['env_name']+f'/expert_seed{seed}')
 
 
 def deep_update_dict(fr, to):
