@@ -20,3 +20,4 @@ __pycache__
 .bk_pb/
 build.yml
 data/
+logs/

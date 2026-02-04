@@ -61,6 +61,9 @@ def main(config, gpu, docker, debug, eval, goal_idx=0, seed=0):
     variant['util_params']['gpu_id'] = gpu
 
     cfg.gpu_id = gpu
+    cfg.num_train_steps = variant['algo_params']['train_epoch']
+    cfg.eval_frequency = variant['algo_params']['train_epoch'] // 100
+    cfg.save_frequency = variant['algo_params']['train_epoch'] // 10
     print('cfg.agent', cfg.agent)
     print(list(range(variant['env_params']['n_tasks'])))
     # multi-processing

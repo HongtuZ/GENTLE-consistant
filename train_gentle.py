@@ -7,8 +7,7 @@ import torch
 import random
 import multiprocessing as mp
 from itertools import product
-from tensorboardX import SummaryWriter
-import ast
+from torch.utils.tensorboard import SummaryWriter
 
 from rlkit.envs import ENVS
 from rlkit.envs.wrappers import NormalizedBoxEnv
@@ -170,7 +169,8 @@ def deep_update_dict(fr, to):
 @click.option('--gpu', default=0)
 @click.option('--debug', default=0)
 @click.option('--algo_type', default='gentle')  
-@click.option('--seed_list', default=[0])
+# @click.option('--seed_list', multiple=True, type=int, default=[0,1,2,3])
+@click.option('--seed_list', multiple=True, type=int, default=[1,4,5,6,7])
 @click.option('--output_prefix', default='')
 def main(config, gpu, debug, algo_type, seed_list, output_prefix):
 
@@ -187,10 +187,10 @@ def main(config, gpu, debug, algo_type, seed_list, output_prefix):
 
     # multi-processing
     if len(seed_list) > 1:
-        if isinstance(seed_list, str):
-            seed_list = ast.literal_eval(seed_list)
-        p = mp.Pool(len(seed_list))
-        p.starmap(experiment, product([variant], seed_list))
+        with mp.Pool(processes=len(seed_list)) as pool:
+            pool.starmap(experiment, product([variant], seed_list))
+            pool.close()
+            pool.join()  # 等待所有进程完成
     else:
         experiment(variant, seed=seed_list[0])
 

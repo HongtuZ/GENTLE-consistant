@@ -44,9 +44,7 @@ def experiment(cfg=cfg, env_name=None, env=None, goal_idx=0, checkpoint_step=1e6
 
 # @click.command()
 parser = argparse.ArgumentParser()
-parser.add_argument("--config", default="./configs/ant-dir.json")
-parser.add_argument("--checkpoint_step", type=int, default=int(1e6))
-parser.add_argument("--num_episodes", type=int, default=50)
+parser.add_argument("config", default="./configs/ant-dir.json")
 parser.add_argument("--action_noise", type=float, default=0.0)
 args = parser.parse_args()
 def main(goal_idx=0):
@@ -58,7 +56,7 @@ def main(goal_idx=0):
     env = NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params']))
     env.seed(1)
     env.reset_task(goal_idx)
-    experiment(env_name=variant['env_name'] ,env=env, goal_idx=goal_idx, checkpoint_step=args.checkpoint_step, num_episodes=args.num_episodes, action_noise=args.action_noise)
+    experiment(env_name=variant['env_name'] ,env=env, goal_idx=goal_idx, checkpoint_step=int(variant['algo_params']['train_epoch']), num_episodes=int(variant['algo_params']['n_trj']), action_noise=args.action_noise)
 
 if __name__ == '__main__':
     variant = default_config

@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import os
 from rlkit.torch.networks import  EnsembleDynamicsModel
+import rlkit.torch.pytorch_util as ptu
 
 class MultiTaskDynamics(object):
     def __init__(self,
@@ -85,6 +86,7 @@ class MultiTaskDynamics(object):
         holdout_ratio: float = 0.2,
     ) -> None:
         inputs, targets = self.format_samples_for_training(data)
+        inputs, targets = ptu.from_numpy(inputs), ptu.from_numpy(targets)
         data_size = inputs.shape[0]
         holdout_size = min(int(data_size * holdout_ratio), 1000)
         train_size = data_size - holdout_size
@@ -95,10 +97,14 @@ class MultiTaskDynamics(object):
         holdout_losses = [1e10 for i in range(self.model.num_ensemble)]
 
         data_idxes = np.random.randint(train_size, size=[self.model.num_ensemble, train_size])
+        data_idxes = torch.randint(0, train_size, (self.model.num_ensemble, train_size), device=ptu.device)
+
 
         def shuffle_rows(arr):
-            idxes = np.argsort(np.random.uniform(size=arr.shape), axis=-1)
-            return arr[np.arange(arr.shape[0])[:, None], idxes]
+            # idxes = np.argsort(np.random.uniform(size=arr.shape), axis=-1)
+            # return arr[np.arange(arr.shape[0])[:, None], idxes]
+            perm = torch.rand(arr.shape, device=arr.device).argsort(dim=-1)
+            return torch.gather(arr, 1, perm)
 
         epoch = 0
         cnt = 0
@@ -133,8 +139,8 @@ class MultiTaskDynamics(object):
 
     def learn(
         self,
-        inputs: np.ndarray,
-        targets: np.ndarray,
+        inputs: torch.Tensor,
+        targets: torch.Tensor,
         batch_size: int = 256,
     ) -> float:
         self.model.train()
@@ -144,7 +150,6 @@ class MultiTaskDynamics(object):
         for batch_num in range(int(np.ceil(train_size / batch_size))):
             inputs_batch = inputs[:, batch_num * batch_size:(batch_num + 1) * batch_size]
             targets_batch = targets[:, batch_num * batch_size:(batch_num + 1) * batch_size]
-            targets_batch = torch.as_tensor(targets_batch).to(self.model.device)
             
             mean = self.model(inputs_batch)
             # Average over batch and dim, sum over ensembles.
@@ -160,12 +165,11 @@ class MultiTaskDynamics(object):
         return np.mean(losses)
         
     @ torch.no_grad()
-    def validate(self, inputs: np.ndarray, targets: np.ndarray) -> List[float]:
+    def validate(self, inputs: torch.Tensor, targets: torch.Tensor) -> List[float]:
         self.model.eval()
-        targets = torch.as_tensor(targets).to(self.model.device)
         mean = self.model(inputs)
         loss = ((mean - targets) ** 2).mean(dim=(1, 2))
-        val_loss = list(loss.cpu().numpy())
+        val_loss = ptu.get_numpy(loss).tolist()
         return val_loss
 
     def save(self, save_path: str) -> None:

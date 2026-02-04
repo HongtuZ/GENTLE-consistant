@@ -66,6 +66,7 @@ def experiment(variant, seed=None):
                                      use_next_obs_in_context=use_next_obs_in_context,
                                      ensemble_size=variant['algo_params']['ensemble_size'],
                                      dynamics_weight_decay=[2.5e-5, 5e-5, 7.5e-5])
+    task_dynamics.to(device=ptu.device)
     train_tasks = list(tasks[:variant['n_train_tasks']])
     train_buffer = MultiTaskReplayBuffer(variant['algo_params']['replay_buffer_size'], env, train_tasks, 1)
 
@@ -73,29 +74,29 @@ def experiment(variant, seed=None):
     for n in range(variant['algo_params']['n_trj']):
         train_trj_paths += glob.glob(os.path.join(variant['algo_params']['data_dir'], "goal_idx*", "trj_evalsample%d_step%d.npy" %(n, variant['algo_params']['train_epoch'])))
             
-        train_paths = [train_trj_path for train_trj_path in train_trj_paths if
-                       int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in train_tasks]
-        train_task_idxs = [int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) for train_trj_path in train_trj_paths if
-                       int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in train_tasks]
-        
-        obs_train_lst = []
-        action_train_lst = []
-        reward_train_lst = []
-        next_obs_train_lst = []
-        terminal_train_lst = []
-        task_train_lst = []
+    train_paths = [train_trj_path for train_trj_path in train_trj_paths if
+                   int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in train_tasks]
+    train_task_idxs = [int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) for train_trj_path in train_trj_paths if
+                   int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in train_tasks]
 
-        for train_path, train_task_idx in zip(train_paths, train_task_idxs):
-            trj_npy = np.load(train_path, allow_pickle=True)
-            obs_train_lst += list(trj_npy[:, 0])
-            action_train_lst += list(trj_npy[:, 1])
-            reward_train_lst += list(trj_npy[:, 2])
-            next_obs_train_lst += list(trj_npy[:, 3])
-            terminal = [0 for _ in range(trj_npy.shape[0])]
-            terminal[-1] = 1
-            terminal_train_lst += terminal
-            task_train = [train_task_idx for _ in range(trj_npy.shape[0])]
-            task_train_lst += task_train
+    obs_train_lst = []
+    action_train_lst = []
+    reward_train_lst = []
+    next_obs_train_lst = []
+    terminal_train_lst = []
+    task_train_lst = []
+
+    for train_path, train_task_idx in zip(train_paths, train_task_idxs):
+        trj_npy = np.load(train_path, allow_pickle=True)
+        obs_train_lst += list(trj_npy[:, 0])
+        action_train_lst += list(trj_npy[:, 1])
+        reward_train_lst += list(trj_npy[:, 2])
+        next_obs_train_lst += list(trj_npy[:, 3])
+        terminal = [0 for _ in range(trj_npy.shape[0])]
+        terminal[-1] = 1
+        terminal_train_lst += terminal
+        task_train = [train_task_idx for _ in range(trj_npy.shape[0])]
+        task_train_lst += task_train
         
     obs_normalizer.update(obs_train_lst)
     env.update_obs_mean_var(obs_normalizer.mean, obs_normalizer.var)
@@ -138,7 +139,7 @@ def deep_update_dict(fr, to):
 @click.command()
 @click.argument('config', default=None)
 @click.option('--gpu', default=0)
-@click.option('--seed_list', default=[0])
+@click.option('--seed_list', multiple=True, type=int, default=[0,1,2,3,4,5,6,7])
 
 def main(config, gpu, seed_list):
 
